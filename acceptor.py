@@ -72,7 +72,7 @@ class RemoteControlReq(cstruct.CStruct):
 
 class RemoteControlResp(cstruct.CStruct):
     __byte_order__ = cstruct.BIG_ENDIAN
-    __struct__ = """`
+    __struct__ = """
     """
 
     def GetResponse(self,serial):
@@ -104,6 +104,31 @@ class DataCRCS0(cstruct.CStruct):
         unsigned short EDay;
         unsigned short unknown;
     """
+
+    def GetJson(self):
+            return {
+                'Vpv1': round(float(self.Vpv1)/10.0, 1),
+                'Vpv2': round(float(self.Vpv2)/10.0, 1),
+                'Ipv1': round(float(self.Ipv1)/10.0, 1),
+                'Ipv2': round(float(self.Ipv2)/10.0, 1),
+                'Vac1': round(float(self.Vac1)/10.0, 1),
+                'Iac1': round(float(self.Iac1)/10.0, 1),
+                'Fac1': round(float(self.Fac1)/100.0, 1),
+                'Pac': round(float(self.Pac), 1),
+                'WorkMode': self.WorkMode,
+                'Temperature': round(float(self.Temperature)/10.0, 1),
+                'ErrorMsg': self.ErrorMsg,
+                'OutputTotal': self.ETotal,
+                'HoursTotal': self.hTotal,
+                'SoftVersion': self.SoftVersion,
+                'WarningCode': self.WarningCode,
+                'FunctionsBitValue': self.FunctionsBitValue,
+                'BUSVoltage': self.BUSVoltage,
+                'NBUSVoltage': self.NBUSVoltage,
+                'GFCIFaultValue': self.GFCIFaultValue,
+                'OutputDay': self.EDay,
+                'unknown': self.unknown
+            }
 
 class DataCRCS1(cstruct.CStruct):
     __byte_order__ = cstruct.BIG_ENDIAN
@@ -159,9 +184,9 @@ class DataCRCS1(cstruct.CStruct):
         'Iac1':  round(float(self.Iac1)/10.0,1), \
         'Iac2':  round(float(self.Iac2)/10.0,1), \
         'Iac3':  round(float(self.Iac3)/10.0,1), \
-        'Fac1':  round(float(self.Fac1)/10.0,1), \
-        'Fac2':  round(float(self.Fac2)/10.0,1), \
-        'Fac3':  round(float(self.Fac3)/10.0,1), \
+        'Fac1':  round(float(self.Fac1)/100.0,1), \
+        'Fac2':  round(float(self.Fac2)/100.0,1), \
+        'Fac3':  round(float(self.Fac3)/100.0,1), \
         'Pac':  round(float(self.Pac),1), \
         'WorkMode' : self.WorkMode, \
         'Temperature':  round(float(self.Temperature)/10.0,1), \
@@ -221,11 +246,14 @@ class DataCRCReq(cstruct.CStruct):
     """
 
     def GetJson(self):
-        return { 'reading' : self.reading.GetJson(), \
-        'unknown1' : self.unknown1, \
-        'serial' : self.serial.decode("ascii"), \
-        'series' : self.series, \
-        'size' : self.datasize }
+        reading_json = self.reading.GetJson() if hasattr(self, 'reading') and self.reading is not None else None
+        return {
+            'reading': reading_json,
+            'unknown1': self.unknown1,
+            'serial': self.serial.decode("ascii"),
+            'series': self.series,
+            'size': self.datasize
+        }
 
     def print_info(self):
         # print("%s,%s,%s,%s,%s" % (self.serial, self.reading.Vac1, self.reading.Iac1, self.reading.Temperature, self.reading.ETotal))
@@ -257,23 +285,25 @@ class DataCRCResp(cstruct.CStruct):
         return self.pack()
 
 def getPubList():
-    return {'Vpv1': {'unit_of_measurement': 'V', 'state_class': 'measurement','device_class': 'energy'},  \
-    'Vpv2':  {'unit_of_measurement': 'V', 'state_class': 'measurement','device_class': 'energy'},  \
-    'Ipv1':  {'unit_of_measurement': 'A', 'state_class': 'measurement','device_class': 'energy'},  \
-    'Ipv2':  {'unit_of_measurement': 'A', 'state_class': 'measurement','device_class': 'energy'},  \
-    'Vac1':  {'unit_of_measurement': 'V', 'state_class': 'measurement','device_class': 'energy'},  \
-    'Vac2':  {'unit_of_measurement': 'V', 'state_class': 'measurement','device_class': 'energy'},  \
-    'Vac3':  {'unit_of_measurement': 'V', 'state_class': 'measurement','device_class': 'energy'},  \
-    'Iac1':  {'unit_of_measurement': 'A', 'state_class': 'measurement','device_class': 'energy'},  \
-    'Iac2':  {'unit_of_measurement': 'A', 'state_class': 'measurement','device_class': 'energy'},  \
-    'Iac3':  {'unit_of_measurement': 'A', 'state_class': 'measurement','device_class': 'energy'},  \
-    'Fac1':  {'unit_of_measurement': 'Hz', 'state_class': 'measurement','device_class': 'energy'},  \
-    'Fac2':  {'unit_of_measurement': 'Hz', 'state_class': 'measurement','device_class': 'energy'},  \
-    'Fac3':  {'unit_of_measurement': 'Hz', 'state_class': 'measurement','device_class': 'energy'},  \
-    'Pac':  {'unit_of_measurement': 'kW', 'state_class': 'measurement','device_class': 'energy'},  \
-    'Temperature':  {'unit_of_measurement': '°C', 'state_class': 'measurement','device_class': 'energy'},  \
-    'OutputTotal':  {'unit_of_measurement': 'kWh', 'state_class': 'total_increasing','device_class': 'energy'},  \
-    'HoursTotal':  {'unit_of_measurement': 'Hours', 'state_class': 'total_increasing','device_class': 'energy'}  \
+    return {
+        'Vpv1': {'unit_of_measurement': 'V', 'state_class': 'measurement', 'device_class': 'voltage'},
+        'Vpv2': {'unit_of_measurement': 'V', 'state_class': 'measurement', 'device_class': 'voltage'},
+        'Ipv1': {'unit_of_measurement': 'A', 'state_class': 'measurement', 'device_class': 'current'},
+        'Ipv2': {'unit_of_measurement': 'A', 'state_class': 'measurement', 'device_class': 'current'},
+        'Vac1': {'unit_of_measurement': 'V', 'state_class': 'measurement', 'device_class': 'voltage'},
+        'Vac2': {'unit_of_measurement': 'V', 'state_class': 'measurement', 'device_class': 'voltage'},
+        'Vac3': {'unit_of_measurement': 'V', 'state_class': 'measurement', 'device_class': 'voltage'},
+        'Iac1': {'unit_of_measurement': 'A', 'state_class': 'measurement', 'device_class': 'current'},
+        'Iac2': {'unit_of_measurement': 'A', 'state_class': 'measurement', 'device_class': 'current'},
+        'Iac3': {'unit_of_measurement': 'A', 'state_class': 'measurement', 'device_class': 'current'},
+        'Fac1': {'unit_of_measurement': 'Hz', 'state_class': 'measurement', 'device_class': 'frequency'},
+        'Fac2': {'unit_of_measurement': 'Hz', 'state_class': 'measurement', 'device_class': 'frequency'},
+        'Fac3': {'unit_of_measurement': 'Hz', 'state_class': 'measurement', 'device_class': 'frequency'},
+        'Pac': {'unit_of_measurement': 'kW', 'state_class': 'measurement', 'device_class': 'power'},
+        'Temperature': {'unit_of_measurement': '°C', 'state_class': 'measurement', 'device_class': 'temperature'},
+        'OutputTotal': {'unit_of_measurement': 'kWh', 'state_class': 'total_increasing', 'device_class': 'energy'},
+        'OutputDay': {'unit_of_measurement': 'kWh', 'state_class': 'total_increasing', 'device_class': 'energy'},
+        'HoursTotal': {'unit_of_measurement': 'Hours', 'state_class': 'total_increasing', 'device_class': None}
     }
 
 def getPublishDevice(model):
@@ -283,15 +313,24 @@ def getPublishDevice(model):
     'model':model, \
     'manufacturer':'GoodWe' }
 def getPublishPayload(data,tag,unit,serial):
-    return { \
-    'name': "goodwe.%s" % tag, \
-    'state_topic': "goodwe/%s/Publish" % serial , \
-    'value_template': "{{ value_json.reading.%s }}" % tag , \
-    'unit_of_measurement': unit['unit_of_measurement'], \
-    'state_class': unit['state_class'], \
-    'device_class': unit['device_class'], \
-    'unique_id': "goodwe_%s" % tag, \
-    'device' : getPublishDevice(data.reading.model.decode("ascii")) }
+    model = None
+    if hasattr(data, 'reading') and data.reading is not None and hasattr(data.reading, 'model'):
+        try:
+            model = data.reading.model.decode("ascii")
+        except Exception:
+            model = str(data.reading.model)
+    else:
+        model = "Unknown"
+    return {
+        'name': f"{tag}",
+        'state_topic': f"goodwe/{serial}/Publish",
+        'value_template': f"{{{{ value_json.reading.{tag} }}}}",
+        'unit_of_measurement': unit['unit_of_measurement'],
+        'state_class': unit['state_class'],
+        'device_class': unit['device_class'],
+        'unique_id': f"goodwe_{serial}_{tag}",
+        'device': getPublishDevice(model)
+    }
 
 def sendmqtt(data):
     mqtt_broker = os.environ.get("MQTT_BROKER", "localhost")
@@ -301,24 +340,54 @@ def sendmqtt(data):
     mqtt_client_id = os.environ.get("MQTT_CLIENT_ID", "GoodWe")
     mqtt_keepalive = int(os.environ.get("MQTT_KEEPALIVE", 60))
     test = data
-    client = mqtt.Client(mqtt_client_id)
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2,mqtt_client_id)
     if mqtt_username and mqtt_password:
-        client.username_pw_set(mqtt_username, mqtt_password)
+        client.username_pw_set(username=mqtt_username, password=mqtt_password)
     #client.tls_set("mqttca.cer",tls_version=ssl.PROTOCOL_TLSv1_2)
     #client.tls_insecure_set(True)
-    client.connect(mqtt_broker, mqtt_port, mqtt_keepalive)
-    print("data: %s" % data.GetJson(), file=sys.stderr)
+
+    import threading
+    connected_event = threading.Event()
+
+    def on_connect(client, userdata, flags, reason_code, properties=None):
+        print(f"Connected to MQTT broker with reason code {reason_code}", file=sys.stderr)
+        if reason_code == 0:
+            connected_event.set()
+        else:
+            print(f"MQTT connection failed: {reason_code}", file=sys.stderr)
+
+    def on_publish(client, userdata, mid, reason_code, properties=None):
+        print(f"Message {mid} published, reason_code={reason_code}", file=sys.stderr)
+
+    client.on_connect = on_connect
+    client.on_publish = on_publish
+
+    client.connect(host=mqtt_broker, port=mqtt_port, keepalive=mqtt_keepalive)
+    client.loop_start()
+    # Wait for connection (timeout after 5 seconds)
+    if not connected_event.wait(timeout=5):
+        print("MQTT client failed to connect within timeout.", file=sys.stderr)
+        client.loop_stop()
+        client.disconnect()
+        return
+
     jsonData = data.GetJson()
     serial = data.serial.decode("ascii")
     pubList = getPubList()
     for tag in pubList:
         jsonPub = getPublishPayload(data, tag, pubList[tag], serial)
-        client.publish("homeassistant/sensor/goodwe_{:s}/{:s}/config".format(serial, tag), json.dumps(jsonPub))
-        print("tag: %s" % jsonPub, file=sys.stderr)
-    client.publish("goodwe/%s/Publish" % (serial), json.dumps(jsonData))
+        result = client.publish(topic=f"homeassistant/sensor/goodwe_{serial}/{tag}/config", payload=json.dumps(jsonPub))
+        if result.rc != mqtt.MQTT_ERR_SUCCESS:
+            print(f"Failed to publish {tag} config: {mqtt.error_string(result.rc)}", file=sys.stderr)
+        print(f"tag: {jsonPub}", file=sys.stderr)
+    result = client.publish(topic=f"goodwe/{serial}/Publish", payload=json.dumps(jsonData))
+    if result.rc != mqtt.MQTT_ERR_SUCCESS:
+        print(f"Failed to publish data: {mqtt.error_string(result.rc)}", file=sys.stderr)
+    print(f"data: {jsonData}", file=sys.stderr)
+    client.loop_stop()
     client.disconnect()
 
-@post('/DataCRC')
+@post('/Acceptor/DataCRC')
 def datacrc():
     data = DataCRCReq()
     response.set_header('Content-Type', 'application/octet-stream;charset=UTF-8')
@@ -330,7 +399,7 @@ def datacrc():
     reply=DataCRCResp()
     return reply.GetResponse(data.serial)
 
-@post('/GetSendInterval')
+@post('/Acceptor/GetSendInterval')
 def getsendinterval():
     data = SendIntervalReq()
     body = request.body.read()
@@ -341,7 +410,7 @@ def getsendinterval():
     return reply.GetResponse(data.serial)
 
 
-@post('/GetLocalTime')
+@post('/Acceptor/GetLocalTime')
 def getlocaltime():
     data = LocalTimeReq()
     body = request.body.read()
@@ -351,7 +420,7 @@ def getlocaltime():
     reply = LocalTimeResp()
     return reply.GetResponse(data.serial)
 
-@post('/GetRemoteControl')
+@post('/Acceptor/GetRemoteControl')
 def getremotecontrol():
     data = RemoteControlReq()
     body = request.body.read()
