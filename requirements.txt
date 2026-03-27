@@ -1,0 +1,4 @@
+bottle
+cstruct
+paho-mqtt
+crc16
