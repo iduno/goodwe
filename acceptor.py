@@ -113,7 +113,7 @@ class DataCRCS0(cstruct.CStruct):
                 'Ipv2': round(float(self.Ipv2)/10.0, 1),
                 'Vac1': round(float(self.Vac1)/10.0, 1),
                 'Iac1': round(float(self.Iac1)/10.0, 1),
-                'Fac1': round(float(self.Fac1)/100.0, 1),
+                'Fac1': round(float(self.Fac1)/100.0, 2),
                 'Pac': round(float(self.Pac), 1),
                 'WorkMode': self.WorkMode,
                 'Temperature': round(float(self.Temperature)/10.0, 1),
@@ -126,7 +126,7 @@ class DataCRCS0(cstruct.CStruct):
                 'BUSVoltage': self.BUSVoltage,
                 'NBUSVoltage': self.NBUSVoltage,
                 'GFCIFaultValue': self.GFCIFaultValue,
-                'OutputDay': self.EDay,
+                'OutputDay': round(float(self.EDay)/10.0, 2),
                 'unknown': self.unknown
             }
 
@@ -184,10 +184,10 @@ class DataCRCS1(cstruct.CStruct):
         'Iac1':  round(float(self.Iac1)/10.0,1), \
         'Iac2':  round(float(self.Iac2)/10.0,1), \
         'Iac3':  round(float(self.Iac3)/10.0,1), \
-        'Fac1':  round(float(self.Fac1)/100.0,1), \
-        'Fac2':  round(float(self.Fac2)/100.0,1), \
-        'Fac3':  round(float(self.Fac3)/100.0,1), \
-        'Pac':  round(float(self.Pac),1), \
+        'Fac1':  round(float(self.Fac1)/100.0,2), \
+        'Fac2':  round(float(self.Fac2)/100.0,2), \
+        'Fac3':  round(float(self.Fac3)/100.0,2), \
+        'Pac':  round(float(self.Pac),2), \
         'WorkMode' : self.WorkMode, \
         'Temperature':  round(float(self.Temperature)/10.0,1), \
         'ErrorMsg': self.ErrorMsg, \
@@ -203,7 +203,7 @@ class DataCRCS1(cstruct.CStruct):
         'NBUSVoltage': self.NBUSVoltage, \
         'Line3FFaultValue': self.Line3FFaultValue, \
         'GFCIFaultValue': self.GFCIFaultValue, \
-        'OutputDay':  self.EDay, \
+        'OutputDay':  round(float(self.EDay)/10.0,1), \
         'time': self.time.GetJsonTime(), \
         'unknown2': self.unknown2, \
         'ARMSoftVersion': self.ARMSoftVersion, \
@@ -212,29 +212,6 @@ class DataCRCS1(cstruct.CStruct):
         'unknown5': self.unknown5, \
         'unknown6': self.unknown6, \
         'model': self.model.decode("ascii") }
-
-    def GetHomeAssistJson(self):
-        return { 'type':  self.model.decode("ascii"), \
-        'work_mode': str(self.WorkMode), \
-        'pgrid_w': str(self.Pac), \
-        'temperature': str(round(float(self.temperature)/10.0,1)), \
-        'eday_kwh': str(round(float(self.EDay),1)), \
-        'etotal_kwh': str(round(float(self.ETotal),1)), \
-        'grid_voltage_1' : str(round(float(self.Vac1)/10.0,1)), \
-        'grid_current_1' : str(round(float(self.Iac1)/10.0,1)), \
-        'grid_frequency_1' : str(round(float(self.Fac1)/100.0,1)), \
-        'grid_voltage_2' : str(round(float(self.Vac2)/10.0,1)), \
-        'grid_current_2' : str(round(float(self.Iac2)/10.0,1)), \
-        'grid_frequency_2' : str(round(float(self.Fac2)/100.0,1)), \
-        'grid_voltage_3' : str(round(float(self.Vac3)/10.0,1)), \
-        'grid_current_3' : str(round(float(self.Iac3)/10.0,1)), \
-        'grid_frequency_3' : str(round(float(self.Fac3)/100.0,1)), \
-        'dc_voltage_str_1' : str(round(float(self.Vpv1)/100.0,1)), \
-        'dc_current_str_1' : str(round(float(self.Ipv1)/100.0,1)), \
-        'dc_voltage_str_2' : str(round(float(self.Vpv2)/100.0,1)), \
-        'dc_current_str_2' : str(round(float(self.Ipv2)/100.0,1)), \
-        'time': "20%02d-%02d-%02d %02d:%02d:%02d".format((self.time.Year%100), self.time.Month, self.time.Day, self.time.Hour, self.time.Minute, self.time.Second) }
-
 
 class DataCRCReq(cstruct.CStruct):
     __byte_order__ = cstruct.BIG_ENDIAN
