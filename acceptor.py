@@ -187,7 +187,7 @@ class DataCRCS1(cstruct.CStruct):
         'Fac1':  round(float(self.Fac1)/100.0,2), \
         'Fac2':  round(float(self.Fac2)/100.0,2), \
         'Fac3':  round(float(self.Fac3)/100.0,2), \
-        'Pac':  round(float(self.Pac),2), \
+        'Pac':  round(float(self.Pac)/100.0,2), \
         'WorkMode' : self.WorkMode, \
         'Temperature':  round(float(self.Temperature)/10.0,1), \
         'ErrorMsg': self.ErrorMsg, \
