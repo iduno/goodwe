@@ -49,7 +49,6 @@ class LocalTimeResp(cstruct.CStruct):
     __byte_order__ = cstruct.BIG_ENDIAN
     __struct__ = """
         char serial[16];
-        unsigned char Year;
         struct MsgTime time;
         unsigned short cksum;
     """
@@ -62,6 +61,20 @@ class LocalTimeResp(cstruct.CStruct):
         cksum=sum(self.pack())
         self.cksum=cksum
         return self.pack()
+
+class SendIntervalReq(cstruct.CStruct):
+    __byte_order__ = cstruct.BIG_ENDIAN
+    __struct__ = """
+        char serial[16];
+    """
+class SendIntervalResp(cstruct.CStruct):
+    __byte_order__ = cstruct.BIG_ENDIAN
+    __struct__ = """
+    """
+
+    def GetResponse(self,serial):
+        return ""
+
 
 class RemoteControlReq(cstruct.CStruct):
     __byte_order__ = cstruct.BIG_ENDIAN
@@ -238,11 +251,15 @@ class DataCRCReq(cstruct.CStruct):
 
     def GetMessage(self,data):
         self.unpack(data[:len(self)])
-        if self.series == 0:
-            self.reading=DataCRCS0()
-        else:
+        print("DataCRCReq: %s, %d, %d, %d" % (self.serial, self.unknown1, self.series, self.datasize), file=sys.stderr)
+        # The first packet out of the inverter has series 0, but it doesn't seem to contain any useful data, so we will ignore it for now
+        # If using a single phase inverter this may be needed to be uncommented.
+        # if self.series == 0:
+        #     self.reading=DataCRCS0()
+        # else:
+        if self.series == 1:
             self.reading=DataCRCS1()
-        self.reading.unpack(data[len(self):])
+            self.reading.unpack(data[len(self):])
 
 class DataCRCResp(cstruct.CStruct):
     __byte_order__ = cstruct.BIG_ENDIAN
@@ -316,7 +333,6 @@ def sendmqtt(data):
     mqtt_password = os.environ.get("MQTT_PASSWORD")
     mqtt_client_id = os.environ.get("MQTT_CLIENT_ID", "GoodWe")
     mqtt_keepalive = int(os.environ.get("MQTT_KEEPALIVE", 60))
-    test = data
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2,mqtt_client_id)
     if mqtt_username and mqtt_password:
         client.username_pw_set(username=mqtt_username, password=mqtt_password)
@@ -348,31 +364,32 @@ def sendmqtt(data):
         client.disconnect()
         return
 
-    jsonData = data.GetJson()
-    serial = data.serial.decode("ascii")
-    pubList = getPubList()
-    for tag in pubList:
-        jsonPub = getPublishPayload(data, tag, pubList[tag], serial)
-        result = client.publish(topic=f"homeassistant/sensor/goodwe_{serial}/{tag}/config", payload=json.dumps(jsonPub))
+    if hasattr(data, 'reading') and data.reading is not None:
+        jsonData = data.GetJson()
+        serial = data.serial.decode("ascii")
+        pubList = getPubList()
+        for tag in pubList:
+            jsonPub = getPublishPayload(data, tag, pubList[tag], serial)
+            result = client.publish(topic=f"homeassistant/sensor/goodwe_{serial}/{tag}/config", payload=json.dumps(jsonPub))
+            if result.rc != mqtt.MQTT_ERR_SUCCESS:
+                print(f"Failed to publish {tag} config: {mqtt.error_string(result.rc)}", file=sys.stderr)
+            print(f"tag: {jsonPub}", file=sys.stderr)
+        result = client.publish(topic=f"goodwe/{serial}/Publish", payload=json.dumps(jsonData))
         if result.rc != mqtt.MQTT_ERR_SUCCESS:
-            print(f"Failed to publish {tag} config: {mqtt.error_string(result.rc)}", file=sys.stderr)
-        print(f"tag: {jsonPub}", file=sys.stderr)
-    result = client.publish(topic=f"goodwe/{serial}/Publish", payload=json.dumps(jsonData))
-    if result.rc != mqtt.MQTT_ERR_SUCCESS:
-        print(f"Failed to publish data: {mqtt.error_string(result.rc)}", file=sys.stderr)
-    print(f"data: {jsonData}", file=sys.stderr)
-    client.loop_stop()
-    client.disconnect()
+            print(f"Failed to publish data: {mqtt.error_string(result.rc)}", file=sys.stderr)
+        print(f"data: {jsonData}", file=sys.stderr)
+        client.loop_stop()
+        client.disconnect()
 
 @post('/Acceptor/DataCRC')
 def datacrc():
     data = DataCRCReq()
     response.set_header('Content-Type', 'application/octet-stream;charset=UTF-8')
     body = request.body.read()
-    print("DataCRC: %s",body, file=sys.stderr);
+    print("DataCRC: %d, %s",len(body), body, file=sys.stderr);
     data.GetMessage(body)
-    sendmqtt(data)
     print(data)
+    sendmqtt(data)
     reply=DataCRCResp()
     return reply.GetResponse(data.serial)
 
@@ -380,10 +397,10 @@ def datacrc():
 def getsendinterval():
     data = SendIntervalReq()
     body = request.body.read()
-    print("GetSendInterval: %s",body, file=sys.stderr);
+    print("GetSendInterval: %d, %s",len(body), body, file=sys.stderr);
     data.unpack(body)
 
-    reply = LocalTimeResp()
+    reply = SendIntervalResp()
     return reply.GetResponse(data.serial)
 
 
@@ -391,7 +408,7 @@ def getsendinterval():
 def getlocaltime():
     data = LocalTimeReq()
     body = request.body.read()
-    print("GetLocalTime: %s",body, file=sys.stderr);
+    print("GetLocalTime: %d, %s",len(body), body, file=sys.stderr);
     data.unpack(body)
 
     reply = LocalTimeResp()
@@ -401,7 +418,7 @@ def getlocaltime():
 def getremotecontrol():
     data = RemoteControlReq()
     body = request.body.read()
-    print("GetRemoteControl: %s",body, file=sys.stderr);
+    print("GetRemoteControl: %d, %s",len(body), body, file=sys.stderr);
     data.unpack(body)
 
     reply = RemoteControlResp()
