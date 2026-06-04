@@ -204,7 +204,7 @@ class DataCRCS1(cstruct.CStruct):
         'WorkMode' : self.WorkMode, \
         'Temperature':  round(float(self.Temperature)/10.0,1), \
         'ErrorMsg': self.ErrorMsg, \
-        'OutputTotal': self.ETotal, \
+        'OutputTotal': round(float(self.ETotal)/10.0, 1), \
         'HoursTotal': self.hTotal, \
         'SoftVersion': self.SoftVersion, \
         'WarningCode': self.WarningCode, \
